@@ -61,18 +61,52 @@ export default function VotePage() {
     try {
       setVoting(true)
 
-      // For now, we'll just fetch a new matchup
-      // In Step 5, we'll implement the actual vote processing
-      console.log(`Vote cast: ${result}`)
+      // Process the vote
+      const voteResponse = await fetch('/api/vote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          matchup: {
+            id: matchup.id,
+            leftProfile: {
+              id: matchup.leftProfile.id,
+              elo_rating: matchup.leftProfile.elo_rating,
+              school: { id: 'school_' + matchup.leftProfile.school.slug }
+            },
+            rightProfile: {
+              id: matchup.rightProfile.id,
+              elo_rating: matchup.rightProfile.elo_rating,
+              school: { id: 'school_' + matchup.rightProfile.school.slug }
+            }
+          },
+          result
+        })
+      })
 
-      // Simulate vote processing delay
-      await new Promise(resolve => setTimeout(resolve, 500))
+      if (voteResponse.ok) {
+        const voteResult = await voteResponse.json()
+        console.log('Vote processed:', voteResult)
 
-      // Fetch new matchup
+        // Show Elo changes briefly
+        if (voteResult.eloUpdate && result !== 'SKIP') {
+          console.log('Elo changes:', {
+            left: `${voteResult.debug.leftProfile.oldRating} → ${voteResult.debug.leftProfile.newRating} (${voteResult.debug.leftProfile.change > 0 ? '+' : ''}${voteResult.debug.leftProfile.change})`,
+            right: `${voteResult.debug.rightProfile.oldRating} → ${voteResult.debug.rightProfile.newRating} (${voteResult.debug.rightProfile.change > 0 ? '+' : ''}${voteResult.debug.rightProfile.change})`
+          })
+        }
+      } else {
+        console.error('Vote processing failed:', await voteResponse.text())
+      }
+
+      // Fetch new matchup regardless of vote processing result
       await fetchNewMatchup()
 
     } catch (error) {
       console.error('Error processing vote:', error)
+      // Still try to fetch new matchup
+      await fetchNewMatchup()
     } finally {
       setVoting(false)
     }
