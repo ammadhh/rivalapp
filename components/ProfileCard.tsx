@@ -26,93 +26,161 @@ interface Profile {
 
 interface ProfileCardProps {
   profile: Profile
-  side: 'left' | 'right'
+  side?: 'left' | 'right'
+  onVote?: (result: 'LEFT' | 'RIGHT') => void
+  disabled?: boolean
 }
 
-export default function ProfileCard({ profile, side }: ProfileCardProps) {
+export default function ProfileCard({ profile, side, onVote, disabled }: ProfileCardProps) {
+  const handleClick = () => {
+    if (onVote && !disabled && side) {
+      onVote(side.toUpperCase() as 'LEFT' | 'RIGHT')
+    }
+  }
+
   return (
-    <div className={`bg-white rounded-lg shadow-lg p-6 max-w-sm mx-auto ${
-      side === 'left' ? 'border-l-4 border-blue-500' : 'border-r-4 border-red-500'
-    }`}>
-      {/* Avatar and Basic Info */}
-      <div className="text-center mb-4">
-        <div className="relative w-20 h-20 mx-auto mb-3">
-          {profile.avatar_url ? (
-            <Image
-              src={profile.avatar_url}
-              alt={profile.name}
-              fill
-              className="rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center">
-              <span className="text-gray-600 text-sm">
+    <div className="group relative">
+      {/* Main Card */}
+      <div
+        className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-8 transition-all duration-300 relative overflow-hidden ${
+          onVote && !disabled
+            ? 'hover:shadow-2xl hover:-translate-y-2 cursor-pointer hover:border-indigo-200 active:scale-95'
+            : 'hover:shadow-xl hover:-translate-y-1'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={handleClick}
+      >
+
+        {/* Gradient Accent Border */}
+        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+          side === 'left'
+            ? 'from-blue-500 to-cyan-500'
+            : side === 'right'
+            ? 'from-emerald-500 to-teal-500'
+            : 'from-indigo-500 to-purple-500'
+        }`} />
+
+        {/* Header Section */}
+        <div className="text-center mb-6">
+          {/* Avatar */}
+          <div className="relative w-24 h-24 mx-auto mb-4">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
+              <span className="text-indigo-700 text-xl font-bold">
                 {profile.name.split(' ').map(n => n[0]).join('')}
               </span>
             </div>
-          )}
-        </div>
-        <h3 className="text-xl font-bold text-gray-900">{profile.name}</h3>
-        {profile.headline && (
-          <p className="text-sm text-gray-600 mt-1">{profile.headline}</p>
-        )}
-      </div>
 
-      {/* School Badge */}
-      <div className="flex items-center justify-center mb-4 p-3 bg-gray-50 rounded-lg">
-        {profile.school.logo_url && (
-          <div className="relative w-8 h-8 mr-3">
-            <Image
-              src={profile.school.logo_url}
-              alt={profile.school.name}
-              fill
-              className="object-contain"
-            />
+            {/* Online Status Indicator */}
+            <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-400 rounded-full border-3 border-white flex items-center justify-center">
+              <div className="w-2 h-2 bg-green-600 rounded-full" />
+            </div>
           </div>
-        )}
-        <div className="text-center">
-          <p className="text-sm font-medium text-gray-900">{profile.school.name}</p>
-          {profile.grad_year && profile.major && (
-            <p className="text-xs text-gray-500">
-              {profile.major} • {profile.grad_year}
+
+          {/* Name & Headline */}
+          <h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">
+            {profile.name}
+          </h3>
+          {profile.headline && (
+            <p className="text-sm text-gray-600 leading-relaxed mb-4">
+              {profile.headline}
             </p>
           )}
         </div>
-      </div>
 
-      {/* Experiences */}
-      {profile.experiences && profile.experiences.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Experience</h4>
-          {profile.experiences.slice(0, 3).map((exp, index) => (
-            <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-              {exp.logoUrl && (
-                <div className="relative w-6 h-6 flex-shrink-0">
-                  <Image
-                    src={exp.logoUrl}
-                    alt={exp.company}
-                    fill
-                    className="object-contain"
-                  />
+        {/* School Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-center p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="text-center min-w-0 flex-1">
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {profile.school.name}
+              </p>
+              {profile.grad_year && profile.major && (
+                <div className="flex items-center justify-center space-x-1 mt-1">
+                  <span className="text-xs text-gray-500">{profile.major}</span>
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-xs text-gray-500">{profile.grad_year}</span>
                 </div>
               )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {exp.title}
-                </p>
-                <p className="text-xs text-gray-500 truncate">{exp.company}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Experience Section */}
+        {profile.experiences && profile.experiences.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 text-center">
+              Experience
+            </h4>
+            <div className="space-y-3">
+              {profile.experiences.slice(0, 2).map((exp, index) => (
+                <div
+                  key={index}
+                  className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:bg-gray-100"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {exp.title}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{exp.company}</p>
+                  </div>
+                </div>
+              ))}
+
+              {profile.experiences.length > 2 && (
+                <div className="text-center">
+                  <span className="text-xs text-gray-400">
+                    +{profile.experiences.length - 2} more
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Elo Rating Badge */}
+        <div className="flex justify-center">
+          <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
+            side === 'left'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+              : side === 'right'
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+          }`}>
+            <span className="text-xs font-medium opacity-75 mr-1">ELO</span>
+            <span className="font-bold">{Math.round(profile.elo_rating)}</span>
+          </div>
+        </div>
+
+        {/* Subtle Pattern Overlay */}
+        <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
+          <div className="w-full h-full bg-gradient-to-bl from-current to-transparent rounded-bl-full" />
+        </div>
+
+        {/* Clickable Indicator */}
+        {onVote && !disabled && (
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl">
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className={`px-4 py-2 rounded-xl font-semibold text-white shadow-lg ${
+                side === 'left'
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+              }`}>
+                Click to Vote
               </div>
             </div>
-          ))}
+          </div>
+        )}
+      </div>
+
+      {/* Side Indicator */}
+      {side && (
+        <div className={`absolute -top-3 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium ${
+          side === 'left'
+            ? 'bg-blue-100 text-blue-700 border border-blue-200'
+            : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+        }`}>
+          {side === 'left' ? 'Candidate A' : 'Candidate B'}
         </div>
       )}
-
-      {/* Elo Rating */}
-      <div className="mt-4 text-center">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-          Elo: {Math.round(profile.elo_rating)}
-        </span>
-      </div>
     </div>
   )
 }

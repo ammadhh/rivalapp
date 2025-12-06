@@ -54,7 +54,7 @@ export default function LeaderboardPage() {
   const fetchSchools = async () => {
     try {
       setSchoolsLoading(true)
-      const response = await fetch('/api/leaderboard/schools?groupSlug=osu-michigan-2025')
+      const response = await fetch('/api/leaderboard/schools?rivalry_group_id=clz1rivalry1')
       if (response.ok) {
         const result = await response.json()
         setSchools(result.data || [])
@@ -72,8 +72,8 @@ export default function LeaderboardPage() {
     try {
       setProfilesLoading(true)
       const url = schoolSlug
-        ? `/api/leaderboard/profiles?groupSlug=osu-michigan-2025&school=${schoolSlug}`
-        : '/api/leaderboard/profiles?groupSlug=osu-michigan-2025'
+        ? `/api/leaderboard/profiles?rivalry_group_id=clz1rivalry1&school=${schoolSlug}`
+        : '/api/leaderboard/profiles?rivalry_group_id=clz1rivalry1'
 
       const response = await fetch(url)
       if (response.ok) {

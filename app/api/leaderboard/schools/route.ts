@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const groupSlug = searchParams.get('groupSlug') || 'osu-michigan-2025'
+    const rivalryGroupId = searchParams.get('rivalry_group_id') || 'clz1rivalry1'
 
     // Mock data that matches our seeded data
     const schoolLeaderboard = [
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: schoolLeaderboard,
       metadata: {
-        groupSlug,
+        rivalryGroupId,
         timestamp: new Date().toISOString(),
         total_schools: schoolLeaderboard.length
       }
