@@ -1,107 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// For now, we'll use direct SQL via Supabase MCP since we can't connect Prisma directly
-// This will return matchup data that the frontend can use
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const rivalryGroupId = searchParams.get('rivalry_group_id') || 'clz1rivalry1'
+
   try {
-    const searchParams = request.nextUrl.searchParams
-    const groupSlug = searchParams.get('groupSlug') || 'osu-michigan-2025'
+    // Get all visible profiles with their schools
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select(`
+        *,
+        school:schools(*)
+      `)
+      .eq('rivalry_group_id', rivalryGroupId)
+      .eq('visible', true)
 
-    // For now, return mock data that matches our seeded profiles
-    // In production, this would use smart matchmaking logic
+    if (profileError) {
+      console.error('Error fetching profiles:', profileError)
+      return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 })
+    }
 
-    const mockMatchups = [
-      // Cross-school matchups (preferred)
-      {
-        id: 'temp_matchup_1',
-        leftProfile: {
-          id: 'clz1profile1',
-          name: 'Alex Chen',
-          school: {
-            name: 'The Ohio State University',
-            slug: 'ohio-state',
-            logo_url: 'https://logos-world.net/wp-content/uploads/2022/04/Ohio-State-Logo.png'
-          },
-          grad_year: 2023,
-          major: 'Computer Science',
-          avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-          headline: 'Software Engineer at Google',
-          experiences: [
-            { company: 'Google', title: 'Software Engineer', logoUrl: 'https://www.google.com/favicon.ico' },
-            { company: 'Microsoft', title: 'SDE Intern', logoUrl: 'https://www.microsoft.com/favicon.ico' }
-          ],
-          elo_rating: 1500
-        },
-        rightProfile: {
-          id: 'clz1profile3',
-          name: 'Marcus Williams',
-          school: {
-            name: 'University of Michigan',
-            slug: 'michigan',
-            logo_url: 'https://logos-world.net/wp-content/uploads/2021/12/Michigan-Wolverines-Logo.png'
-          },
-          grad_year: 2023,
-          major: 'Business Administration',
-          avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-          headline: 'Product Manager at Apple',
-          experiences: [
-            { company: 'Apple', title: 'Product Manager', logoUrl: 'https://www.apple.com/favicon.ico' },
-            { company: 'Amazon', title: 'PM Intern', logoUrl: 'https://www.amazon.com/favicon.ico' }
-          ],
-          elo_rating: 1500
-        }
-      },
-      {
-        id: 'temp_matchup_2',
-        leftProfile: {
-          id: 'clz1profile2',
-          name: 'Sarah Johnson',
-          school: {
-            name: 'The Ohio State University',
-            slug: 'ohio-state',
-            logo_url: 'https://logos-world.net/wp-content/uploads/2022/04/Ohio-State-Logo.png'
-          },
-          grad_year: 2024,
-          major: 'Data Science',
-          avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b6232d8a?w=150&h=150&fit=crop&crop=face',
-          headline: 'ML Engineer at Meta',
-          experiences: [
-            { company: 'Meta', title: 'ML Engineer', logoUrl: 'https://www.facebook.com/favicon.ico' },
-            { company: 'Tesla', title: 'Data Scientist', logoUrl: 'https://www.tesla.com/favicon.ico' }
-          ],
-          elo_rating: 1500
-        },
-        rightProfile: {
-          id: 'clz1profile4',
-          name: 'Emily Rodriguez',
-          school: {
-            name: 'University of Michigan',
-            slug: 'michigan',
-            logo_url: 'https://logos-world.net/wp-content/uploads/2021/12/Michigan-Wolverines-Logo.png'
-          },
-          grad_year: 2024,
-          major: 'Electrical Engineering',
-          avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-          headline: 'Hardware Engineer at NVIDIA',
-          experiences: [
-            { company: 'NVIDIA', title: 'Hardware Engineer', logoUrl: 'https://www.nvidia.com/favicon.ico' },
-            { company: 'Intel', title: 'Engineering Intern', logoUrl: 'https://www.intel.com/favicon.ico' }
-          ],
-          elo_rating: 1500
+    if (!profiles || profiles.length < 2) {
+      return NextResponse.json({ error: 'Not enough profiles for matchup' }, { status: 404 })
+    }
+
+    // Smart matchup selection
+    const crossSchoolProfiles = []
+    const sameSchoolProfiles = []
+
+    for (let i = 0; i < profiles.length; i++) {
+      for (let j = i + 1; j < profiles.length; j++) {
+        const pair = [profiles[i], profiles[j]]
+        if (profiles[i].school_id !== profiles[j].school_id) {
+          crossSchoolProfiles.push(pair)
+        } else {
+          sameSchoolProfiles.push(pair)
         }
       }
-    ]
+    }
 
-    // Return a random matchup
-    const randomMatchup = mockMatchups[Math.floor(Math.random() * mockMatchups.length)]
+    // Prefer cross-school matchups (70% chance if available)
+    let selectedPair
+    if (crossSchoolProfiles.length > 0 && Math.random() < 0.7) {
+      selectedPair = crossSchoolProfiles[Math.floor(Math.random() * crossSchoolProfiles.length)]
+    } else if (sameSchoolProfiles.length > 0 && crossSchoolProfiles.length === 0) {
+      selectedPair = sameSchoolProfiles[Math.floor(Math.random() * sameSchoolProfiles.length)]
+    } else {
+      // Fallback to any available pairing
+      const availablePairs = [...crossSchoolProfiles, ...sameSchoolProfiles]
+      selectedPair = availablePairs[Math.floor(Math.random() * availablePairs.length)]
+    }
 
-    return NextResponse.json(randomMatchup)
+    const [leftProfile, rightProfile] = selectedPair
+
+    // Create and save the matchup
+    const { data: matchup, error: matchupError } = await supabase
+      .from('matchups')
+      .insert({
+        left_profile_id: leftProfile.id,
+        right_profile_id: rightProfile.id,
+        rivalry_group_id: rivalryGroupId
+      })
+      .select()
+      .single()
+
+    if (matchupError) {
+      console.error('Error creating matchup:', matchupError)
+      return NextResponse.json({ error: 'Failed to create matchup' }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      id: matchup.id,
+      rivalry_group_id: rivalryGroupId,
+      leftProfile: leftProfile,
+      rightProfile: rightProfile,
+      is_cross_school: leftProfile.school_id !== rightProfile.school_id
+    })
   } catch (error) {
     console.error('Matchup API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch matchup' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

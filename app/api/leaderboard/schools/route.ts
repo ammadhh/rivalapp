@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// For now, return mock data based on our seeded schools
-// In production, this would query the database via Supabase MCP
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {

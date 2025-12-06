@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { calculateEloFromVote } from '@/lib/elo'
+import { supabase } from '@/lib/supabase'
 import crypto from 'crypto'
-
-// Since we can't use Prisma directly, we'll use Supabase MCP for database operations
-// This would normally import { prisma } from '@/lib/prisma'
 
 interface VoteRequest {
   matchup: {
@@ -39,35 +37,83 @@ export async function POST(request: NextRequest) {
       result
     )
 
-    // Determine winner and loser for rivalry points
-    let winnerProfileId: string | null = null
-    let loserProfileId: string | null = null
-    let shouldUpdateRivalryPoints = false
+    // Save vote to database
+    const { data: voteData, error: voteError } = await supabase
+      .from('votes')
+      .insert({
+        matchup_id: matchup.id,
+        voter_fingerprint: voterFingerprint,
+        result,
+        left_elo_before: eloUpdate.playerA.oldRating,
+        right_elo_before: eloUpdate.playerB.oldRating,
+        left_elo_change: eloUpdate.playerA.change,
+        right_elo_change: eloUpdate.playerB.change
+      })
+      .select()
+      .single()
 
-    if (result === 'LEFT') {
-      winnerProfileId = matchup.leftProfile.id
-      loserProfileId = matchup.rightProfile.id
-      // Update rivalry points if different schools
-      shouldUpdateRivalryPoints = matchup.leftProfile.school.id !== matchup.rightProfile.school.id
-    } else if (result === 'RIGHT') {
-      winnerProfileId = matchup.rightProfile.id
-      loserProfileId = matchup.leftProfile.id
-      // Update rivalry points if different schools
-      shouldUpdateRivalryPoints = matchup.leftProfile.school.id !== matchup.rightProfile.school.id
+    if (voteError) {
+      console.error('Error saving vote:', voteError)
+      return NextResponse.json({ error: 'Failed to save vote' }, { status: 500 })
     }
 
-    // For now, return the calculated updates
-    // In a full implementation, this would save to database via Supabase MCP
+    // Update profile Elo ratings
+    const { error: leftUpdateError } = await supabase
+      .from('profiles')
+      .update({ elo_rating: eloUpdate.playerA.newRating })
+      .eq('id', matchup.leftProfile.id)
+
+    if (leftUpdateError) {
+      console.error('Error updating left profile:', leftUpdateError)
+    }
+
+    const { error: rightUpdateError } = await supabase
+      .from('profiles')
+      .update({ elo_rating: eloUpdate.playerB.newRating })
+      .eq('id', matchup.rightProfile.id)
+
+    if (rightUpdateError) {
+      console.error('Error updating right profile:', rightUpdateError)
+    }
+
+    // Update rivalry points if cross-school matchup
+    if (matchup.leftProfile.school.id !== matchup.rightProfile.school.id) {
+      let winnerSchoolId: string | null = null
+
+      if (result === 'LEFT') {
+        winnerSchoolId = matchup.leftProfile.school.id
+      } else if (result === 'RIGHT') {
+        winnerSchoolId = matchup.rightProfile.school.id
+      }
+
+      if (winnerSchoolId) {
+        // Update rivalry points using read-then-write pattern
+        const { data: school, error: schoolError } = await supabase
+          .from('schools')
+          .select('rivalry_points')
+          .eq('id', winnerSchoolId)
+          .single()
+
+        if (school && !schoolError) {
+          const { error: pointsError } = await supabase
+            .from('schools')
+            .update({ rivalry_points: school.rivalry_points + 1 })
+            .eq('id', winnerSchoolId)
+
+          if (pointsError) {
+            console.error('Error updating rivalry points:', pointsError)
+          }
+        }
+      }
+    }
+
     const response = {
       success: true,
       eloUpdate,
       voteProcessed: {
         result,
         matchupId: matchup.id,
-        voterFingerprint: voterFingerprint.substring(0, 8) + '...', // Partial for privacy
-        winnerProfileId,
-        loserProfileId,
-        rivalryPointsAwarded: shouldUpdateRivalryPoints ? 1 : 0,
+        voterFingerprint: voterFingerprint.substring(0, 8) + '...',
         timestamp: new Date().toISOString()
       },
       debug: {
