@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 interface AddProfileRequest {
   adminSecret: string
@@ -39,35 +40,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate a new ID for the profile
-    const profileId = `profile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Insert profile into Supabase
+    const { data: newProfile, error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        name: profile.name,
+        school_id: profile.school_id,
+        rivalry_group_id: profile.rivalry_group_id,
+        grad_year: profile.grad_year,
+        major: profile.major,
+        avatar_url: profile.avatar_url,
+        headline: profile.headline,
+        experiences: profile.experiences || [],
+        elo_rating: 1500, // Default starting Elo
+        visible: true
+      })
+      .select()
+      .single()
 
-    // In a full implementation, this would use Supabase MCP to insert the profile
-    // For now, return a success response with the profile data
-    const newProfile = {
-      id: profileId,
-      name: profile.name,
-      school_id: profile.school_id,
-      rivalry_group_id: profile.rivalry_group_id,
-      grad_year: profile.grad_year,
-      major: profile.major,
-      avatar_url: profile.avatar_url,
-      headline: profile.headline,
-      experiences: profile.experiences || [],
-      elo_rating: 1500, // Default starting Elo
-      visible: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    if (insertError) {
+      console.error('Error inserting profile:', insertError)
+      return NextResponse.json(
+        { error: 'Failed to create profile in database', details: insertError.message },
+        { status: 500 }
+      )
     }
 
-    console.log('Profile created (mock):', newProfile)
+    console.log('Profile created successfully:', newProfile)
 
     return NextResponse.json({
       success: true,
       message: 'Profile created successfully',
       profile: newProfile,
       debug: {
-        profileId,
+        profileId: newProfile.id,
         startingElo: 1500,
         timestamp: new Date().toISOString()
       }
