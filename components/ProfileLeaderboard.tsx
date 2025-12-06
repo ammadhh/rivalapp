@@ -28,7 +28,7 @@ interface Profile {
 interface ProfileLeaderboardProps {
   profiles: Profile[]
   loading: boolean
-  schoolFilter?: string
+  schoolFilter?: string | null
   onSchoolFilterChange: (school: string | null) => void
   availableSchools: string[]
 }
