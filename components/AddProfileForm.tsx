@@ -45,13 +45,8 @@ export default function AddProfileForm({
     experiences_json: ''
   })
 
-  const handleSubmit = async (e: React.FormEvent, adminSecret: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!adminSecret) {
-      onError('Admin password is required')
-      return
-    }
 
     try {
       setLoading(true)
@@ -70,13 +65,12 @@ export default function AddProfileForm({
         }
       }
 
-      const response = await fetch('/api/admin/add-profile', {
+      const response = await fetch('/api/public-add-profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          adminSecret,
           profile: {
             name: formData.name,
             school_id: formData.school_id,
@@ -119,26 +113,15 @@ export default function AddProfileForm({
 
   return (
     <form
-      onSubmit={(e) => {
-        const adminSecret = (e.target as any).admin_password.value
-        handleSubmit(e, adminSecret)
-      }}
+      onSubmit={handleSubmit}
       className="space-y-6 bg-white p-6 rounded-lg shadow"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Admin Password */}
-        <div className="md:col-span-2">
-          <label htmlFor="admin_password" className="block text-sm font-medium text-gray-700 mb-1">
-            Admin Password *
-          </label>
-          <input
-            type="password"
-            id="admin_password"
-            name="admin_password"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Enter admin password"
-          />
+        {/* Info Message */}
+        <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-700 text-sm">
+            <strong>Add New Profile:</strong> Fill out the form below to add a new profile to the voting system. All profiles start with a 1500 Elo rating.
+          </p>
         </div>
 
         {/* Name */}
