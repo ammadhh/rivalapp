@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VoteResult {
+  LEFT
+  RIGHT
+  EQUAL
+  SKIP
+}
+
+model RivalryGroup {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  starts_at DateTime
+  ends_at   DateTime
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  schools  School[]
+  profiles Profile[]
+  matchups Matchup[]
+
+  @@map("rivalry_groups")
+}
+
+model School {
+  id               String @id @default(cuid())
+  name             String
+  slug             String @unique
+  logo_url         String?
+  rivalry_group_id String
+  rivalry_points   Int    @default(0)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  rivalry_group RivalryGroup @relation(fields: [rivalry_group_id], references: [id], onDelete: Cascade)
+  profiles      Profile[]
+
+  @@map("schools")
+}
+
+model Profile {
+  id               String  @id @default(cuid())
+  name             String
+  school_id        String
+  rivalry_group_id String
+  grad_year        Int?
+  major            String?
+  avatar_url       String?
+  headline         String?
+  experiences      Json?   // JSON array of {company, title, logoUrl}
+  elo_rating       Float   @default(1500)
+  visible          Boolean @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  school        School       @relation(fields: [school_id], references: [id], onDelete: Cascade)
+  rivalry_group RivalryGroup @relation(fields: [rivalry_group_id], references: [id], onDelete: Cascade)
+
+  left_matchups    Matchup[] @relation("LeftProfile")
+  right_matchups   Matchup[] @relation("RightProfile")
+  won_votes        Vote[]    @relation("WinnerVotes")
+  lost_votes       Vote[]    @relation("LoserVotes")
+
+  @@map("profiles")
+}
+
+model Matchup {
+  id               String @id @default(cuid())
+  rivalry_group_id String
+  left_profile_id  String
+  right_profile_id String
+  created_at       DateTime @default(now())
+
+  rivalry_group RivalryGroup @relation(fields: [rivalry_group_id], references: [id], onDelete: Cascade)
+  left_profile  Profile      @relation("LeftProfile", fields: [left_profile_id], references: [id], onDelete: Cascade)
+  right_profile Profile      @relation("RightProfile", fields: [right_profile_id], references: [id], onDelete: Cascade)
+
+  votes Vote[]
+
+  @@map("matchups")
+}
+
+model Vote {
+  id                 String     @id @default(cuid())
+  matchup_id         String
+  winner_profile_id  String?
+  loser_profile_id   String?
+  result             VoteResult
+  voter_fingerprint  String
+  created_at         DateTime   @default(now())
+
+  matchup        Matchup  @relation(fields: [matchup_id], references: [id], onDelete: Cascade)
+  winner_profile Profile? @relation("WinnerVotes", fields: [winner_profile_id], references: [id], onDelete: SetNull)
+  loser_profile  Profile? @relation("LoserVotes", fields: [loser_profile_id], references: [id], onDelete: SetNull)
+
+  @@map("votes")
+}
