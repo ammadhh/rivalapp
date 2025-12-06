@@ -63,7 +63,22 @@ export default function ProfileCard({ profile, side, onVote, disabled }: Profile
         <div className="text-center mb-6">
           {/* Avatar */}
           <div className="relative w-24 h-24 mx-auto mb-4">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
+            {profile.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt={profile.name}
+                fill
+                className="rounded-full object-cover ring-4 ring-white shadow-lg"
+                onError={(e) => {
+                  // Fallback to initials if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+
+            <div className={`w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg ${profile.avatar_url ? 'hidden' : ''}`}>
               <span className="text-indigo-700 text-xl font-bold">
                 {profile.name.split(' ').map(n => n[0]).join('')}
               </span>

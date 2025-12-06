@@ -117,15 +117,20 @@ export default function ProfileLeaderboard({
                         src={profile.avatar_url}
                         alt={profile.name}
                         fill
-                        className="rounded-full object-cover"
+                        className="rounded-full object-cover ring-2 ring-gray-100 shadow-sm"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
                       />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                        <span className="text-gray-600 text-sm font-medium">
-                          {profile.name.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                    )}
+                    ) : null}
+
+                    <div className={`w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full flex items-center justify-center ring-2 ring-gray-100 shadow-sm ${profile.avatar_url ? 'hidden' : ''}`}>
+                      <span className="text-indigo-700 text-sm font-bold">
+                        {profile.name.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Profile Info */}

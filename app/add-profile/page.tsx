@@ -18,7 +18,8 @@ export default function AddProfilePage() {
     school_id: '',
     grad_year: new Date().getFullYear(),
     major: '',
-    headline: ''
+    headline: '',
+    avatar_url: ''
   })
 
   const schools: School[] = [
@@ -57,6 +58,7 @@ export default function AddProfilePage() {
           grad_year: formData.grad_year,
           major: formData.major || undefined,
           headline: formData.headline || undefined,
+          avatar_url: formData.avatar_url || undefined,
           elo_rating: 1500,
           visible: true,
           experiences: []
@@ -78,7 +80,8 @@ export default function AddProfilePage() {
         school_id: '',
         grad_year: new Date().getFullYear(),
         major: '',
-        headline: ''
+        headline: '',
+        avatar_url: ''
       })
 
     } catch (error) {
@@ -202,6 +205,24 @@ export default function AddProfilePage() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 placeholder="Software Engineer at Google"
               />
+            </div>
+
+            {/* Avatar URL */}
+            <div>
+              <label htmlFor="avatar_url" className="block text-sm font-semibold text-gray-900 mb-2">
+                Profile Picture URL (Optional)
+              </label>
+              <input
+                type="url"
+                id="avatar_url"
+                value={formData.avatar_url}
+                onChange={(e) => setFormData(prev => ({ ...prev, avatar_url: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Add a URL to your profile picture. Try <a href="https://unsplash.com" target="_blank" className="text-blue-500 hover:underline">Unsplash</a> or <a href="https://images.google.com" target="_blank" className="text-blue-500 hover:underline">Google Images</a> for professional photos.
+              </p>
             </div>
 
             {/* Submit Button */}
