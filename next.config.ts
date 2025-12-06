@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'logos-world.net',
+        hostname: 'a.espncdn.com',
         port: '',
         pathname: '/**',
       },

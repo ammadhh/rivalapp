@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         id: 'clz1school1',
         name: 'The Ohio State University',
         slug: 'ohio-state',
-        logo_url: 'https://logos-world.net/wp-content/uploads/2022/04/Ohio-State-Logo.png',
+        logo_url: 'https://a.espncdn.com/i/teamlogos/ncaa/500/194.png',
         rivalry_points: 0, // Would be calculated from wins
         profile_count: 3,
         average_elo: 1500, // Would be calculated from top 10 profiles
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         id: 'clz1school2',
         name: 'University of Michigan',
         slug: 'michigan',
-        logo_url: 'https://logos-world.net/wp-content/uploads/2021/12/Michigan-Wolverines-Logo.png',
+        logo_url: 'https://a.espncdn.com/i/teamlogos/ncaa/500/130.png',
         rivalry_points: 0, // Would be calculated from wins
         profile_count: 3,
         average_elo: 1500, // Would be calculated from top 10 profiles
